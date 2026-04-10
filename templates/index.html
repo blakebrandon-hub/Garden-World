@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden World</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(to bottom, #1a1a2e 0%, #0f0f1e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* ── SIDE PANELS ── */
+        .side-panel {
+            background: #16161f;
+            border: 1px solid #3a3a4a;
+            border-radius: 8px;
+            padding: 15px;
+            height: fit-content;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #2a2a3a;
+        }
+        .panel-section:last-child { border-bottom: none; margin-bottom: 0; }
+
+        .panel-title {
+            font-size: 0.85em;
+            color: #7fba7f;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .panel-item {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            border-left: 2px solid #3a3a4a;
+        }
+        .panel-item-header { color: #999; font-size: 0.8em; text-transform: uppercase; margin-bottom: 3px; }
+        .panel-item-content { color: #e0e0e0; }
+
+        .plant-item  { border-left-color: #7fba7f; }
+        .object-item { border-left-color: #5a7fb8; }
+        .location-rowan { border-left-color: #b89f5a; }
+        .location-mira  { border-left-color: #ba7fb8; }
+
+        .plant-health { font-size: 0.8em; color: #999; margin-top: 3px; }
+        .health-good     { color: #7fba7f; }
+        .health-warning  { color: #b89f5a; }
+        .health-critical { color: #ba5a5a; }
+
+        /* ── CENTER COLUMN ── */
+        .center-column { min-width: 0; }
+        .container { max-width: 100%; }
+
+        header {
+            text-align: center;
+            padding: 25px 0 20px;
+            border-bottom: 1px solid #3a3a4a;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.2em;
+            color: #7fba7f;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #999;
+            font-size: 0.85em;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        /* ── SAVE/LOAD BAR ── */
+        .save-bar {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-save     { background: #3a5a3a; color: #9fda9f; border: 1px solid #5a8a5a; }
+        .btn-load     { background: #3a3a5a; color: #9f9fda; border: 1px solid #5a5a8a; }
+        .btn-newgame  { background: #5a2a2a; color: #da9f9f; border: 1px solid #8a5a5a; }
+
+        .btn-save:hover    { background: #4a6a4a; }
+        .btn-load:hover    { background: #4a4a6a; }
+        .btn-newgame:hover { background: #6a3a3a; }
+
+        /* hidden file input */
+        #fileInput { display: none; }
+
+        /* ── CONVERSATION ── */
+        .conversation {
+            background: #16161f;
+            border: 1px solid #3a3a4a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            max-height: 480px;
+            overflow-y: auto;
+            min-height: 300px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
+
+        .message.action   { background: #1e2838; border-left: 3px solid #5a7fb8; }
+        .message.dialog   { background: #2a2a1e; border-left: 3px solid #b89f5a; }
+        .message.narrator { background: #1e2e1e; border-left: 3px solid #7fba7f; font-style: italic; }
+        .message.photo    { background: #2e1e2e; border-left: 3px solid #ba7fb8; padding: 0; overflow: hidden; }
+
+        .message-header {
+            font-size: 0.85em;
+            color: #999;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .photo-img     { width: 100%; display: block; }
+        .photo-caption { padding: 12px; font-size: 0.9em; color: #ccc; }
+
+        /* ── INPUT SECTION ── */
+        .input-section {
+            background: #16161f;
+            border: 1px solid #3a3a4a;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group:last-child { margin-bottom: 0; }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #999;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: #0f0f1e;
+            border: 1px solid #3a3a4a;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 1em;
+            font-family: 'Georgia', serif;
+        }
+        input[type="text"]:focus { outline: none; border-color: #7fba7f; }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.2s;
+            font-family: 'Georgia', serif;
+        }
+
+        .btn-action    { background: #5a7fb8; color: white; flex: 1; }
+        .btn-action:hover { background: #6a8fc8; }
+
+        .btn-dialog    { background: #b89f5a; color: white; flex: 1; }
+        .btn-dialog:hover { background: #c8af6a; }
+
+        .btn-photo     { background: #ba7fb8; color: white; }
+        .btn-photo:hover { background: #ca8fc8; }
+
+        .btn-scrapbook { background: #7fba7f; color: white; }
+        .btn-scrapbook:hover { background: #8fca8f; }
+
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── LOADING ── */
+        .loading {
+            text-align: center;
+            color: #7fba7f;
+            padding: 20px;
+            font-style: italic;
+            animation: pulse 1.4s infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+        /* ── TOAST ── */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #2a3a2a;
+            color: #9fda9f;
+            border: 1px solid #5a8a5a;
+            padding: 10px 22px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            transition: transform 0.3s ease;
+            z-index: 999;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        #toast.error { background: #3a2a2a; color: #da9f9f; border-color: #8a5a5a; }
+
+        /* ── SCROLLBAR ── */
+        .conversation::-webkit-scrollbar,
+        .side-panel::-webkit-scrollbar { width: 8px; }
+        .conversation::-webkit-scrollbar-track,
+        .side-panel::-webkit-scrollbar-track { background: #0f0f1e; }
+        .conversation::-webkit-scrollbar-thumb,
+        .side-panel::-webkit-scrollbar-thumb { background: #3a3a4a; border-radius: 4px; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1200px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .side-panel  { position: relative; top: 0; max-height: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-layout">
+
+    <!-- LEFT PANEL: Character Info -->
+    <div class="side-panel">
+        <div class="panel-section">
+            <div class="panel-title">🚶 Locations</div>
+            <div id="locationsList"></div>
+        </div>
+        <div class="panel-section">
+            <div class="panel-title">🎒 Inventories</div>
+            <div id="inventoriesList"></div>
+        </div>
+    </div>
+
+    <!-- CENTER: Main Game -->
+    <div class="center-column">
+        <div class="container">
+
+            <header>
+                <h1>🌱 Garden World</h1>
+                <div class="subtitle">A quiet garden in the stars — Rowan & Mira</div>
+            </header>
+
+            <!-- Save / Load / New Game bar -->
+            <div class="save-bar">
+                <button class="btn-save"    id="saveBtn">💾 Save Game</button>
+                <button class="btn-load"    id="loadBtn">📂 Load Game</button>
+                <button class="btn-newgame" id="newGameBtn">🌱 New Game</button>
+            </div>
+            <!-- Hidden file input for load -->
+            <input type="file" id="fileInput" accept=".json">
+
+            <div class="conversation" id="conversation"></div>
+
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="actionInput">Perform Action</label>
+                    <input type="text" id="actionInput" placeholder="What does Rowan do?">
+                </div>
+                <div class="input-group">
+                    <label for="dialogInput">Speak</label>
+                    <input type="text" id="dialogInput" placeholder="What does Rowan say?">
+                </div>
+                <div class="button-group">
+                    <button class="btn-action"    id="actionBtn">Perform Action</button>
+                    <button class="btn-dialog"    id="dialogBtn">Say Dialog</button>
+                    <button class="btn-photo"     id="photoBtn">📸 Take Photo</button>
+                    <button class="btn-scrapbook" id="scrapbookBtn">📖 Scrapbook</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: World State -->
+    <div class="side-panel">
+        <div class="panel-section">
+            <div class="panel-title">🌿 Garden</div>
+            <div id="plantsList"></div>
+        </div>
+        <div class="panel-section">
+            <div class="panel-title">📦 World Objects</div>
+            <div id="objectsList"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let lastNarratorText = '';
+
+// ── Toast helper ─────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = isError ? 'error show' : 'show';
+    setTimeout(() => { t.className = isError ? 'error' : ''; }, 3000);
+}
+
+// ── Side panel refresh ───────────────────────────────────────────────────────
+async function updateSidePanels() {
+    try {
+        const [stateRes, plantsRes, objectsRes] = await Promise.all([
+            fetch('/api/state'),
+            fetch('/api/plants'),
+            fetch('/api/objects')
+        ]);
+        const state      = await stateRes.json();
+        const plantsData = await plantsRes.json();
+        const objectsData = await objectsRes.json();
+
+        // Locations
+        const locDiv = document.getElementById('locationsList');
+        locDiv.innerHTML = '';
+        for (const [char, loc] of Object.entries(state.character_locations || {})) {
+            locDiv.innerHTML += `
+                <div class="panel-item location-${char.toLowerCase()}">
+                    <div class="panel-item-header">${char}</div>
+                    <div class="panel-item-content">${loc}</div>
+                </div>`;
+        }
+
+        // Inventories
+        const invDiv = document.getElementById('inventoriesList');
+        invDiv.innerHTML = '';
+        for (const [char, items] of Object.entries(state.inventories || {})) {
+            invDiv.innerHTML += `
+                <div class="panel-item location-${char.toLowerCase()}">
+                    <div class="panel-item-header">${char}</div>
+                    <div class="panel-item-content">${items.length ? items.join(', ') : '(empty)'}</div>
+                </div>`;
+        }
+
+        // Plants
+        const plantsDiv = document.getElementById('plantsList');
+        const plants = plantsData.plants || [];
+        if (!plants.length) {
+            plantsDiv.innerHTML = '<div class="panel-item">No plants yet</div>';
+        } else {
+            plantsDiv.innerHTML = plants.map(p => {
+                const h = p.health ?? 100;
+                const cls = h >= 70 ? 'health-good' : h >= 40 ? 'health-warning' : 'health-critical';
+                const water = p.days_since_watered > 0 ? ' 💧' : '';
+                return `<div class="panel-item plant-item">
+                    <div class="panel-item-header">${p.name}${water}</div>
+                    <div class="panel-item-content">${p.stage || 'Seed'}</div>
+                    <div class="plant-health ${cls}">Health: ${h}%</div>
+                </div>`;
+            }).join('');
+        }
+
+        // Objects (grouped by location)
+        const objDiv = document.getElementById('objectsList');
+        const objects = objectsData.objects || [];
+        if (!objects.length) {
+            objDiv.innerHTML = '<div class="panel-item">No objects</div>';
+        } else {
+            const byLoc = {};
+            objects.forEach(o => { (byLoc[o.location] ??= []).push(o.name); });
+            objDiv.innerHTML = Object.entries(byLoc).map(([loc, items]) => `
+                <div class="panel-item object-item">
+                    <div class="panel-item-header">${loc}</div>
+                    <div class="panel-item-content">${items.join(', ')}</div>
+                </div>`).join('');
+        }
+    } catch (err) {
+        console.error('Side panel update failed:', err);
+    }
+}
+
+// ── Conversation helpers ─────────────────────────────────────────────────────
+function addMessage(type, character, text, imageData = null) {
+    const conv = document.getElementById('conversation');
+    const div  = document.createElement('div');
+    div.className = `message ${type}`;
+
+    if (type === 'photo' && imageData) {
+        const src = imageData.image_url || '';
+        div.innerHTML = `
+            <img src="${src}" class="photo-img" alt="Garden memory">
+            <div class="photo-caption">
+                <div class="message-header">Memory captured</div>
+                ${imageData.narrator_text || ''}
+            </div>`;
+    } else {
+        const header = type === 'narrator' ? 'Narrator'
+                     : type === 'action'   ? `${character} (action)`
+                     :                       `${character} (dialog)`;
+        div.innerHTML = `<div class="message-header">${header}</div><div>${text}</div>`;
+    }
+
+    conv.appendChild(div);
+    conv.scrollTop = conv.scrollHeight;
+}
+
+function showLoading() {
+    const conv = document.getElementById('conversation');
+    const div  = document.createElement('div');
+    div.className = 'loading';
+    div.id = 'loading';
+    div.textContent = '...';
+    conv.appendChild(div);
+    conv.scrollTop = conv.scrollHeight;
+}
+
+function hideLoading() {
+    document.getElementById('loading')?.remove();
+}
+
+function renderMessages(msgs) {
+    for (const item of msgs) {
+        if (item.type === 'narrator') {
+            lastNarratorText = item.text;
+            addMessage('narrator', item.character, item.text);
+        } else if (item.type === 'dialog') {
+            addMessage('dialog', item.character, item.text);
+        } else if (item.type === 'action') {
+            addMessage('action', item.character, item.text);
+        } else if (item.type === 'photo') {
+            addMessage('photo', item.character, null, { image_url: item.image_url, narrator_text: item.text });
+        }
+    }
+}
+
+// ── Load history ─────────────────────────────────────────────────────────────
+async function loadHistory() {
+    try {
+        const res  = await fetch('/api/history');
+        const data = await res.json();
+        const conv = document.getElementById('conversation');
+        conv.innerHTML = '';
+        for (const msg of (data.history || [])) {
+            if (msg.type === 'narrator') lastNarratorText = msg.text;
+            addMessage(msg.type, msg.character, msg.text);
+        }
+        await updateSidePanels();
+    } catch (err) {
+        console.error('loadHistory error:', err);
+    }
+}
+
+// ── Action ───────────────────────────────────────────────────────────────────
+document.getElementById('actionBtn').addEventListener('click', async () => {
+    const input = document.getElementById('actionInput');
+    const text  = input.value.trim();
+    if (!text) return;
+
+    addMessage('action', 'Rowan', text);
+    input.value = '';
+    showLoading();
+    disableInputs(true);
+
+    try {
+        const res  = await fetch('/api/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ character: 'Rowan', text })
+        });
+        const data = await res.json();
+        hideLoading();
+        if (data.messages) renderMessages(data.messages);
+        await updateSidePanels();
+    } catch (err) {
+        hideLoading();
+        addMessage('narrator', 'narrator', '[Error: Could not reach the narrator]');
+    } finally {
+        disableInputs(false);
+    }
+});
+
+// ── Dialog ───────────────────────────────────────────────────────────────────
+document.getElementById('dialogBtn').addEventListener('click', async () => {
+    const input = document.getElementById('dialogInput');
+    const text  = input.value.trim();
+    if (!text) return;
+
+    addMessage('dialog', 'Rowan', text);
+    input.value = '';
+    showLoading();
+    disableInputs(true);
+
+    try {
+        const res  = await fetch('/api/dialog', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ character: 'Rowan', text })
+        });
+        const data = await res.json();
+        hideLoading();
+        if (data.messages) renderMessages(data.messages);
+        await updateSidePanels();
+    } catch (err) {
+        hideLoading();
+    } finally {
+        disableInputs(false);
+    }
+});
+
+// ── Photo ────────────────────────────────────────────────────────────────────
+document.getElementById('photoBtn').addEventListener('click', async () => {
+    if (!lastNarratorText) {
+        showToast('Perform an action first to generate a scene.', true);
+        return;
+    }
+    const btn = document.getElementById('photoBtn');
+    btn.disabled = true;
+    btn.textContent = '📸 Generating…';
+    showLoading();
+
+    try {
+        const res  = await fetch('/api/photo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ narrator_text: lastNarratorText })
+        });
+        const data = await res.json();
+        hideLoading();
+        if (data.success) {
+            addMessage('photo', 'memory', null, data);
+            showToast('Memory captured ✨');
+        } else {
+            addMessage('narrator', 'narrator', `[Photo failed: ${data.error}]`);
+        }
+    } catch (err) {
+        hideLoading();
+        addMessage('narrator', 'narrator', '[Error: Could not capture photo]');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '📸 Take Photo';
+    }
+});
+
+// ── Scrapbook ────────────────────────────────────────────────────────────────
+document.getElementById('scrapbookBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('scrapbookBtn');
+    btn.disabled = true;
+    btn.textContent = '📖 Loading…';
+    await loadHistory();
+    btn.disabled = false;
+    btn.textContent = '📖 Scrapbook';
+});
+
+// ── Save ─────────────────────────────────────────────────────────────────────
+document.getElementById('saveBtn').addEventListener('click', async () => {
+    try {
+        const res = await fetch('/api/save', { method: 'POST' });
+        if (!res.ok) throw new Error(await res.text());
+
+        // Trigger browser download
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'garden_world_save.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Game saved 💾');
+    } catch (err) {
+        showToast('Save failed: ' + err.message, true);
+    }
+});
+
+// ── Load ─────────────────────────────────────────────────────────────────────
+document.getElementById('loadBtn').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+});
+
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+        const json = await file.text();
+        const res  = await fetch('/api/load', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: json
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        showToast('Save loaded 📂');
+        await loadHistory();
+    } catch (err) {
+        showToast('Load failed: ' + err.message, true);
+    } finally {
+        // Reset input so the same file can be loaded again
+        e.target.value = '';
+    }
+});
+
+// ── New Game ─────────────────────────────────────────────────────────────────
+document.getElementById('newGameBtn').addEventListener('click', async () => {
+    if (!confirm('Start a new game? All unsaved progress will be lost.')) return;
+    try {
+        const res  = await fetch('/api/new_game', { method: 'POST' });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('conversation').innerHTML = '';
+        lastNarratorText = '';
+        await updateSidePanels();
+        showToast('New game started 🌱');
+    } catch (err) {
+        showToast('Failed to reset: ' + err.message, true);
+    }
+});
+
+// ── Enter key shortcuts ───────────────────────────────────────────────────────
+document.getElementById('actionInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') document.getElementById('actionBtn').click();
+});
+document.getElementById('dialogInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') document.getElementById('dialogBtn').click();
+});
+
+// ── Input lock helpers ────────────────────────────────────────────────────────
+function disableInputs(yes) {
+    ['actionBtn', 'dialogBtn', 'photoBtn', 'scrapbookBtn',
+     'saveBtn', 'loadBtn', 'newGameBtn'].forEach(id => {
+        document.getElementById(id).disabled = yes;
+    });
+}
+
+// ── Auto-refresh side panels every 30s ───────────────────────────────────────
+setInterval(updateSidePanels, 30_000);
+
+// ── Initial load ──────────────────────────────────────────────────────────────
+loadHistory();
+</script>
+</body>
+</html>
