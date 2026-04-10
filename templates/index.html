@@ -107,13 +107,11 @@
             flex-wrap: wrap;
         }
 
-        .btn-save     { background: #3a5a3a; color: #9fda9f; border: 1px solid #5a8a5a; }
-        .btn-load     { background: #3a3a5a; color: #9f9fda; border: 1px solid #5a5a8a; }
-        .btn-newgame  { background: #5a2a2a; color: #da9f9f; border: 1px solid #8a5a5a; }
+        .btn-save { background: #3a5a3a; color: #9fda9f; border: 1px solid #5a8a5a; }
+        .btn-load { background: #3a3a5a; color: #9f9fda; border: 1px solid #5a5a8a; }
 
-        .btn-save:hover    { background: #4a6a4a; }
-        .btn-load:hover    { background: #4a4a6a; }
-        .btn-newgame:hover { background: #6a3a3a; }
+        .btn-save:hover { background: #4a6a4a; }
+        .btn-load:hover { background: #4a4a6a; }
 
         /* hidden file input */
         #fileInput { display: none; }
@@ -284,11 +282,10 @@
                 <div class="subtitle">A quiet garden in the stars — Rowan & Mira</div>
             </header>
 
-            <!-- Save / Load / New Game bar -->
+            <!-- Save / Load bar -->
             <div class="save-bar">
-                <button class="btn-save"    id="saveBtn">💾 Save Game</button>
-                <button class="btn-load"    id="loadBtn">📂 Load Game</button>
-                <button class="btn-newgame" id="newGameBtn">🌱 New Game</button>
+                <button class="btn-save" id="saveBtn">💾 Save Game</button>
+                <button class="btn-load" id="loadBtn">📂 Load Game</button>
             </div>
             <!-- Hidden file input for load -->
             <input type="file" id="fileInput" accept=".json">
@@ -405,7 +402,7 @@ async function updateSidePanels() {
             objDiv.innerHTML = '<div class="panel-item">No objects</div>';
         } else {
             const byLoc = {};
-            objects.forEach(o => { (byLoc[o.location] ??= []).push(o.name); });
+            objects.forEach(o => { if (!byLoc[o.location]) byLoc[o.location] = []; byLoc[o.location].push(o.name); });
             objDiv.innerHTML = Object.entries(byLoc).map(([loc, items]) => `
                 <div class="panel-item object-item">
                     <div class="panel-item-header">${loc}</div>
@@ -499,8 +496,7 @@ document.getElementById('actionBtn').addEventListener('click', async () => {
     showLoading();
     disableInputs(true);
 
-    try {
-        const res  = await fetch('/api/action', {
+    await ensureGameStarted();
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ character: 'Rowan', text })
@@ -527,6 +523,8 @@ document.getElementById('dialogBtn').addEventListener('click', async () => {
     input.value = '';
     showLoading();
     disableInputs(true);
+
+    await ensureGameStarted();
 
     try {
         const res  = await fetch('/api/dialog', {
@@ -637,21 +635,18 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
     }
 });
 
-// ── New Game ─────────────────────────────────────────────────────────────────
-document.getElementById('newGameBtn').addEventListener('click', async () => {
-    if (!confirm('Start a new game? All unsaved progress will be lost.')) return;
-    try {
-        const res  = await fetch('/api/new_game', { method: 'POST' });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        document.getElementById('conversation').innerHTML = '';
-        lastNarratorText = '';
+// ── Auto new game on first input ─────────────────────────────────────────────
+let gameStarted = false;
+
+async function ensureGameStarted() {
+    if (gameStarted) return;
+    const history = await fetch('/api/history').then(r => r.json());
+    if ((history.history || []).length === 0) {
+        await fetch('/api/new_game', { method: 'POST' });
         await updateSidePanels();
-        showToast('New game started 🌱');
-    } catch (err) {
-        showToast('Failed to reset: ' + err.message, true);
     }
-});
+    gameStarted = true;
+}
 
 // ── Enter key shortcuts ───────────────────────────────────────────────────────
 document.getElementById('actionInput').addEventListener('keypress', e => {
@@ -664,7 +659,7 @@ document.getElementById('dialogInput').addEventListener('keypress', e => {
 // ── Input lock helpers ────────────────────────────────────────────────────────
 function disableInputs(yes) {
     ['actionBtn', 'dialogBtn', 'photoBtn', 'scrapbookBtn',
-     'saveBtn', 'loadBtn', 'newGameBtn'].forEach(id => {
+     'saveBtn', 'loadBtn'].forEach(id => {
         document.getElementById(id).disabled = yes;
     });
 }
