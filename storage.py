@@ -15,7 +15,7 @@ from copy import deepcopy
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
-SAVE_FILE = "garden_world_save.json"
+SAVE_FILE = "/tmp/garden_world_save.json"
 
 ARCHIVE_THRESHOLD = 10_000   # characters before creating a summary
 ARCHIVE_DISPLAY_LAG = 20_000 # characters before showing a summary in context
